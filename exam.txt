@@ -3,6 +3,8 @@
 새 한마리를 보며 하던 일을 멈추고
 두려움 없는 도전은 없다
 선택은 자신의 몫, 어떻게든 되돌아 온다
+밭에서 뛰지마라 <<<< 묘목이 다친다.
+
 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 <고민되는 점>
 고기를 넣어야 하는가?
@@ -45,6 +47,8 @@
 커피
 참다래
 소나무
+당근
+
 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 <생물>
 가재
@@ -125,10 +129,13 @@
 
 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 <링크>
-https://m.blog.naver.com/PostList.naver?blogId=kkury6825&tab=1
-https://blog.naver.com/PostView.naver?blogId=kit6242&logNo=100178940082&parentCategoryNo=&categoryNo=&viewDate=&isShowPopularPosts=false&from=postView
+https://m.blog.naver.com/PostList.naver?blogId=kkury6825&tab=1 << 음식
+https://blog.naver.com/PostList.naver?blogId=kit6242&categoryNo=0&from=postList << 수호 농원
+34일차
+https://blog.naver.com/rok608
+https://blog.naver.com/beom011
 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 <떠오르는 생각들?>
-개량 시스템? 귤+@ >> 천혜향, 레드향,... 이런식으로 하는거 어때?
+개량 시스템? 귤+@ >> 천혜향, 레드향,... // 배추 > 봄동 이런식으로 하는거 어때?
 무게 시스템?? 1포대는 20kg, 이걸 들고 이동할 때 이동속도를 조금 느리게하는 식으로?
 (다른 레벨이 높아지면 조금 완화되고, 고런느낌)
