@@ -330,15 +330,6 @@ export class BeachScene extends Phaser.Scene {
       this.handleRightClick();
     });
 
-    // 우클릭 떼기 → 낚시 던지기
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.button !== 2) return;
-      const fs = this.gm.fishingSystem;
-      if (fs.getState() === 'charging') {
-        fs.release('sea');
-      }
-    });
-
     this.game.canvas.addEventListener('contextmenu', e => e.preventDefault());
   }
 
@@ -426,28 +417,11 @@ export class BeachScene extends Phaser.Scene {
   // ── 낚시 등록 ─────────────────────────────────────────────────
 
   private registerFishing(): void {
-    // 이 씬의 물 타일 판정 등록
     this.gm.setWaterChecker((px, py) => this.isWaterTile(px, py));
 
-    // 낚시 결과 처리
+    // playerBlocked 해제만 담당 (catch 게임 로직은 HUDScene에서 처리)
     const fs = this.gm.fishingSystem;
-    fs.removeAllListeners('catch');
-    fs.removeAllListeners('fail');
-    fs.removeAllListeners('reset');
-
-    fs.on('catch', (fishId: string) => {
-      const added = this.gm.inventorySystem.addItem({
-        itemId:   fishId,
-        itemType: 'fish' as any,
-        condition:'normal',
-        quantity:  1,
-      });
-      const hud = this.scene.get(SCENE_KEYS.HUD) as any;
-      if (!added) hud?.showToast?.('인벤토리가 꽉 찼어요.', 'warn');
-      this.gm.recordSystem.tryFishingDrop();
-      this.playerBlocked = false;
-    });
-
+    fs.on('catch', () => { this.playerBlocked = false; });
     fs.on('fail',  () => { this.playerBlocked = false; });
     fs.on('reset', () => { this.playerBlocked = false; });
   }
@@ -477,7 +451,7 @@ export class BeachScene extends Phaser.Scene {
     this.gm.toolSystem.useTool(tool.id);
 
     // FishingUI에 낚싯대 위치 전달
-    hud?.getFishingUI?.()?.setRodPosition(this.player.x, this.player.y - 8);
+    hud?.getFishingUI?.()?.setRodPosition(this.player.x - this.cameras.main.scrollX, this.player.y - 8 - this.cameras.main.scrollY);
 
     this.playerBlocked = true;
     fs.startCharging();

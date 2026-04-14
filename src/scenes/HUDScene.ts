@@ -96,6 +96,7 @@ export class HUDScene extends Phaser.Scene {
   private fadeRect!: Phaser.GameObjects.Rectangle;
   private inventoryUI!: InventoryUI;
   private fishingUI!: FishingUI;
+  private spaceKey!: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super({ key: 'HUDScene' });
@@ -129,6 +130,18 @@ export class HUDScene extends Phaser.Scene {
       const gm = this.scene.get(SCENE_KEYS.GAME_MANAGER) as GameManagerScene;
       gm.fishingSystem.init(this);
       this.fishingUI = new FishingUI(this, gm.fishingSystem);
+      this.spaceKey  = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      this.setupFishingInput();
+
+      // catch/fail 게임 로직은 HUDScene에서 전역 처리
+      gm.fishingSystem.on('catch', (fishId: string) => {
+        const added = gm.inventorySystem.addItem({
+          itemId: fishId, itemType: 'fish' as any,
+          condition: 'normal', quantity: 1,
+        });
+        if (!added) this.showToast('인벤토리가 꽉 찼어요.', 'warn');
+        gm.recordSystem.tryFishingDrop();
+      });
     });
 
     console.log('[HUDScene] 초기화 완료');
@@ -247,10 +260,36 @@ export class HUDScene extends Phaser.Scene {
     const fs = this.gm.fishingSystem;
     fs.updateCharging();
     if (fs.getState() === 'fight') {
-      const spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-      fs.setHolding(spaceKey?.isDown ?? false);
+      fs.setHolding(this.spaceKey?.isDown ?? false);
       fs.updateFight(delta);
     }
+  }
+
+  // ── 낚시 pointerup 전역 처리 ──────────────────────────────────
+
+  private setupFishingInput(): void {
+    // canvas에 직접 mouseup 이벤트 등록 (모든 씬에서 동작)
+    const canvas = this.game.canvas;
+
+    canvas.addEventListener('mouseup', (e: MouseEvent) => {
+      if (e.button !== 2) return;
+      const fs = this.gm?.fishingSystem;
+      if (!fs || fs.getState() !== 'charging') return;
+
+      // 캔버스 내 마우스 좌표 계산
+      const rect   = canvas.getBoundingClientRect();
+      const scaleX = canvas.width  / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top)  * scaleY;
+
+      const rodX = this.fishingUI?.getRodX?.() ?? mouseX;
+      const rodY = this.fishingUI?.getRodY?.() ?? mouseY;
+      const dx   = mouseX - rodX;
+      const dy   = mouseY - rodY;
+
+      fs.release('sea', { dx, dy });
+    });
   }
 
   // ── 페이드 오버레이 ───────────────────────────────────────────

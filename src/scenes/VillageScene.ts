@@ -281,7 +281,7 @@ export class VillageScene extends Phaser.Scene {
     if (!tool || tool.type !== 'fishingRod') return;
     if (!this.gm.energySystem.consume(6)) { hud?.showToast?.('기력이 부족해요.', 'warn'); return; }
     this.gm.toolSystem.useTool(tool.id);
-    hud?.getFishingUI?.()?.setRodPosition(this.player.x, this.player.y - 8);
+    hud?.getFishingUI?.()?.setRodPosition(this.player.x - this.cameras.main.scrollX, this.player.y - 8 - this.cameras.main.scrollY);
     this.playerBlocked = true;
     fs.startCharging();
   }
@@ -735,26 +735,13 @@ export class VillageScene extends Phaser.Scene {
 
   private registerFishing(): void {
     const T = TILE_SIZE;
-    // 강 구역 (y=28~32타일)
     this.gm.setWaterChecker((_px, py) => {
       const ty = Math.floor(py / T);
       return ty >= 28 && ty < 32;
     });
 
     const fs = this.gm.fishingSystem;
-    fs.removeAllListeners('catch');
-    fs.removeAllListeners('fail');
-    fs.removeAllListeners('reset');
-
-    fs.on('catch', (fishId: string) => {
-      const added = this.gm.inventorySystem.addItem({
-        itemId: fishId, itemType: 'fish' as any, condition: 'normal', quantity: 1,
-      });
-      const hud = this.scene.get(SCENE_KEYS.HUD) as any;
-      if (!added) hud?.showToast?.('인벤토리가 꽉 찼어요.', 'warn');
-      else hud?.showToast?.('물고기를 잡았어요!', 'ok');
-      this.playerBlocked = false;
-    });
+    fs.on('catch', () => { this.playerBlocked = false; });
     fs.on('fail',  () => { this.playerBlocked = false; });
     fs.on('reset', () => { this.playerBlocked = false; });
   }

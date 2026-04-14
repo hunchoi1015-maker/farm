@@ -120,8 +120,9 @@ export class FishingSystem extends Phaser.Events.EventEmitter {
   /**
    * 버튼 떼는 순간 호출.
    * @param location 현재 낚시 장소
+   * @param dir 던지는 방향 벡터 (마우스 위치 - 낚싯대 위치)
    */
-  release(location: FishLocation): number {
+  release(location: FishLocation, dir?: { dx: number; dy: number }): number {
     if (this.state !== 'charging') return 0;
     this.chargeTimer?.remove();
     this.location = location;
@@ -130,8 +131,13 @@ export class FishingSystem extends Phaser.Events.EventEmitter {
     const t       = Math.min(elapsed, 1);
     const power   = 1 - Math.pow(1 - t, 2);
 
+    // 방향 계산 (기본값: 우측 대각선)
+    const angle = dir
+      ? Math.atan2(dir.dy, dir.dx)
+      : -Math.PI / 4;
+
     this.state = 'cast';
-    this.emit('cast', power);
+    this.emit('cast', power, angle);
     return power;
   }
 

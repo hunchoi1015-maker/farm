@@ -67,6 +67,9 @@ export class FishingUI {
     this.rodY = y;
   }
 
+  getRodX(): number { return this.rodX; }
+  getRodY(): number { return this.rodY; }
+
   /** 씬별 물 타일 판정 콜백 등록 */
   setWaterChecker(fn: (px: number, py: number) => boolean): void {
     this.waterChecker = fn;
@@ -79,7 +82,7 @@ export class FishingUI {
     this.fishing.on('chargingUpdate', (p: number) => this.updatePowerGauge(p));
     this.fishing.on('chargingCancel', () => this.hideUI());
 
-    this.fishing.on('cast', (power: number) => this.startCast(power));
+    this.fishing.on('cast', (power: number, angle: number) => this.startCast(power, angle));
     this.fishing.on('splash', (landed: boolean) => {
       if (landed) this.playSplash();
       else        this.playMisscast();
@@ -101,7 +104,7 @@ export class FishingUI {
   // ── 힘 게이지 ─────────────────────────────────────────────────
 
   private powerBg!:   Phaser.GameObjects.Rectangle;
-  private powerBar!:  Phaser.GameObjects.Rectangle;
+  private powerBar:   Phaser.GameObjects.Rectangle | null = null;
   private powerLabel!:Phaser.GameObjects.Text;
 
   private showPowerGauge(): void {
@@ -148,25 +151,26 @@ export class FishingUI {
 
   // ── 찌 던지기 ─────────────────────────────────────────────────
 
-  private startCast(power: number): void {
+  private startCast(power: number, angle: number): void {
     this.hideUI();
     this.destroyBobber();
 
-    // 포물선 초기 속도 계산
-    const angle  = -Math.PI / 4;  // 45도 위쪽
-    const speed  = 200 + power * 400;
+    // 속도 축소 (200+power*400 → 100+power*180)
+    const speed  = 100 + power * 180;
     this.velX    = Math.cos(angle) * speed;
     this.velY    = Math.sin(angle) * speed;
+
+    // 찌 시작 위치 (화면 좌표 — rodX/Y는 이미 화면 좌표)
     this.bobberX = this.rodX;
     this.bobberY = this.rodY;
     this.isOnWater = false;
 
-    // 찌 생성
-    this.bobberCircle = this.scene.add.circle(this.bobberX, this.bobberY, 5, 0xff4444).setDepth(8);
-    this.line         = this.scene.add.graphics().setDepth(7);
-    this.ripples      = this.scene.add.graphics().setDepth(6);
-
-    this.bobber = this.scene.add.container(0, 0, [this.bobberCircle]).setDepth(8);
+    // 찌 생성 (HUDScene이라 setScrollFactor(0) 필요 없음 — 화면 좌표로 직접 렌더링)
+    this.bobberCircle = this.scene.add.circle(this.bobberX, this.bobberY, 5, 0xff4444)
+      .setDepth(8).setScrollFactor(0);
+    this.line    = this.scene.add.graphics().setDepth(7).setScrollFactor(0);
+    this.ripples = this.scene.add.graphics().setDepth(6).setScrollFactor(0);
+    this.bobber  = this.scene.add.container(0, 0, [this.bobberCircle]).setDepth(8);
   }
 
   private destroyBobber(): void {
@@ -270,10 +274,10 @@ export class FishingUI {
   // ── 줄다리기 UI ───────────────────────────────────────────────
 
   private tensionBg!:   Phaser.GameObjects.Rectangle;
-  private tensionBar!:  Phaser.GameObjects.Rectangle;
+  private tensionBar:   Phaser.GameObjects.Rectangle | null = null;
   private tensionSafe!: Phaser.GameObjects.Rectangle;
   private catchBg!:     Phaser.GameObjects.Rectangle;
-  private catchBar!:    Phaser.GameObjects.Rectangle;
+  private catchBar:     Phaser.GameObjects.Rectangle | null = null;
   private holdHint!:    Phaser.GameObjects.Text;
 
   private showFightUI(): void {
@@ -416,13 +420,18 @@ export class FishingUI {
   private hideUI(): void {
     this.uiContainer?.destroy();
     this.uiContainer = null;
+    this.powerBar    = null;
+    this.tensionBar  = null;
+    this.catchBar    = null;
   }
 
   // ── 매 프레임 업데이트 ────────────────────────────────────────
 
   update(delta: number): void {
-    const dt = delta / 1000;
+    const dt    = delta / 1000;
     const state = this.fishing.getState();
+    const camW  = this.scene.cameras.main.width;
+    const camH  = this.scene.cameras.main.height;
 
     // 찌 포물선 이동 (cast 중)
     if (state === 'cast' && this.bobberCircle) {
@@ -431,12 +440,30 @@ export class FishingUI {
       this.bobberY += this.velY * dt;
       this.bobberCircle.setPosition(this.bobberX, this.bobberY);
 
-      // 착지 판정: velY > 0 (하강 중) && 맵 바닥 근처
-      if (this.velY > 0 && this.bobberY >= this.scene.cameras.main.height * 0.9) {
+      // 착지 판정:
+      // 1. 화면 밖으로 나간 경우
+      // 2. 상승했다가 다시 하강 후 일정 속도 이하로 느려진 경우
+      const outOfBounds = this.bobberX < -50 || this.bobberX > camW + 50
+                       || this.bobberY > camH + 50;
+      const hasLanded   = this.velY > 50 && Math.abs(this.velX) < 80;
+
+      if (outOfBounds || hasLanded) {
+        // 화면 좌표 → 월드 좌표 변환
+        const gm        = this.scene.scene.get('GameManagerScene') as any;
+        const mapKey    = gm?.currentMapKey;
+        const mapScene  = mapKey ? this.scene.scene.get(mapKey) : null;
+        const scrollX   = (mapScene as any)?.cameras?.main?.scrollX ?? 0;
+        const scrollY   = (mapScene as any)?.cameras?.main?.scrollY ?? 0;
+
+        const worldX = this.bobberX + scrollX;
+        const worldY = this.bobberY + scrollY;
+
         const isWater = this.waterChecker
-          ? this.waterChecker(this.bobberX + this.scene.cameras.main.scrollX, this.bobberY + this.scene.cameras.main.scrollY)
-          : this.bobberX > this.rodX;  // fallback: 던진 방향
+          ? this.waterChecker(worldX, worldY)
+          : false;
+
         this.fishing.onLand(isWater);
+        return;
       }
     }
 

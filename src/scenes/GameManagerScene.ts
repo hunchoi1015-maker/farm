@@ -91,7 +91,8 @@ export class GameManagerScene extends Phaser.Scene {
   }
 
   // ── 씬 상태 ─────────────────────────────────────────────────────
-  private currentMapKey: SceneKey | null = null;
+  private _currentMapKey: SceneKey | null = null;
+  get currentMapKey(): SceneKey | null { return this._currentMapKey; }
   private isTransitioning = false;
   gameState!: GameState;
 
@@ -113,7 +114,7 @@ export class GameManagerScene extends Phaser.Scene {
 
     // 첫 맵 씬 실행
     this.scene.launch(INITIAL_MAP_SCENE);
-    this.currentMapKey = INITIAL_MAP_SCENE;
+    this._currentMapKey = INITIAL_MAP_SCENE;
 
     // 취침 이벤트 → 자동 저장
     this.timeSystem.on('slept', () => this.handleSleep());
@@ -186,7 +187,7 @@ export class GameManagerScene extends Phaser.Scene {
    */
   switchMap(nextKey: SceneKey, data?: object): void {
     if (this.isTransitioning) return;
-    if (nextKey === this.currentMapKey) return;
+    if (nextKey === this._currentMapKey) return;
 
     this.isTransitioning = true;
 
@@ -200,7 +201,7 @@ export class GameManagerScene extends Phaser.Scene {
     const fadeOut = hud?.fadeOut?.bind(hud) ?? ((cb: () => void) => cb());
 
     fadeOut(() => {
-      const prev = this.currentMapKey;
+      const prev = this._currentMapKey;
 
       // 이전 씬 sleep
       if (prev && this.scene.isActive(prev)) {
@@ -214,7 +215,7 @@ export class GameManagerScene extends Phaser.Scene {
         this.scene.launch(nextKey, data);
       }
 
-      this.currentMapKey    = nextKey;
+      this._currentMapKey    = nextKey;
       this.isTransitioning  = false;
 
       // 페이드 인
@@ -283,6 +284,6 @@ export class GameManagerScene extends Phaser.Scene {
 
   // ── 게터 ──────────────────────────────────────────────────────
 
-  getCurrentMapKey(): SceneKey | null { return this.currentMapKey; }
+  getCurrentMapKey(): SceneKey | null { return this._currentMapKey; }
   isInTransition(): boolean           { return this.isTransitioning; }
 }
